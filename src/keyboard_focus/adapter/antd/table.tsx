@@ -5,6 +5,7 @@ import React, {
   forwardRef,
   FunctionComponentElement,
   ReactElement,
+  RefAttributes,
   useMemo,
   useRef,
 } from 'react'
@@ -25,7 +26,7 @@ export interface AntdTableFocusAdapterProps extends KeyboardFocusContextProps {
    * 右侧固定列的总宽度（用于在执行滚动时计算）
    */
   rightFixedWidth?: number | (() => number)
-  children?: ReactElement
+  children?: ReactElement<TableProps<unknown> & RefAttributes<unknown>>
 }
 
 function getValue<T>(value: T | (() => T)) {
@@ -114,8 +115,8 @@ const AntdTableFocusAdapter = forwardRef<
 
   return (
     <KeyboardFocusContext {...rest} ref={ref} onFocus={handleFocused}>
-      {React.cloneElement<TableProps<unknown>>(children, {
-        ...children.props,
+      {React.cloneElement(children, {
+        ...(children.props || {}),
         columns,
         ref: composeRef(
           tableRef,
