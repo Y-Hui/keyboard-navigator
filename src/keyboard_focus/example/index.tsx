@@ -1,5 +1,7 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 import './index.less'
 
+import { InfoCircleOutlined } from '@ant-design/icons'
 import {
   Button,
   Cascader,
@@ -10,10 +12,12 @@ import {
   Modal,
   Radio,
   Select,
+  Space,
   Table,
+  Tooltip,
 } from 'antd'
-import { ColumnsType } from 'antd/lib/table/interface'
-import { filter, slice, times } from 'lodash-es'
+import { ColumnType } from 'antd/lib/table/interface'
+import { filter, isNil, slice, times, trim } from 'lodash-es'
 import React, { useMemo, useRef, useState } from 'react'
 
 import KeyboardFocus, { KeyboardFocusContextRef, useFocusYAxis } from '../index'
@@ -67,17 +71,21 @@ const options: Option2[] = [
   },
 ]
 
+const renderSkeleton = () => {
+  return <div className="skeleton" />
+}
+
 const Example: React.VFC = () => {
-  const [data, setData] = useState<Data[]>(() =>
-    times(40, (key) => {
+  const [data, setData] = useState<Data[]>(() => [
+    { key: -1, isEdit: true, isNone: false },
+    ...times(39, (key) => {
       return { key, isEdit: true, isNone: Math.random() > 0.9 }
     }),
-  )
+  ])
 
   const [show, setShow] = useState(true)
   const columns = useMemo(() => {
-    type Item = ColumnsType<Data>[number]
-    const result: (ColumnsType<Data>[number] | null)[] = [
+    const result: (ColumnType<Data> & { hide?: boolean })[] = [
       {
         dataIndex: '00',
         title: '序号',
@@ -90,9 +98,7 @@ const Example: React.VFC = () => {
       {
         key: 'placeholder1',
         width: 150,
-        render() {
-          return 'PLACEHOLDER1'
-        },
+        render: renderSkeleton,
       },
       {
         dataIndex: '3',
@@ -100,7 +106,7 @@ const Example: React.VFC = () => {
         width: 240,
         render(val, row, index) {
           if (row.isNone) {
-            return <span>None</span>
+            return renderSkeleton()
           }
           return (
             <div style={{ display: 'flex' }}>
@@ -136,7 +142,7 @@ const Example: React.VFC = () => {
         width: 240,
         render(val, row, index) {
           if (row.isNone) {
-            return <span>None</span>
+            return renderSkeleton()
           }
           const disabled = index === 5 || index === 7 || index === 8
           const disabledLeft = index === 4 || index === 9
@@ -174,32 +180,50 @@ const Example: React.VFC = () => {
           )
         },
       },
-      !show
-        ? null
-        : {
-            dataIndex: '1',
-            title: '动态列',
-            width: 200,
-            render(val, row, index) {
-              if (row.isNone) {
-                return <span>None</span>
-              }
-              return (
-                <Form.Item name={[index, 'number']} noStyle>
-                  <KeyboardFocus.Input focusKey="动态列">
-                    <InputNumber style={{ width: '100%' }} keyboard={false} />
-                  </KeyboardFocus.Input>
-                </Form.Item>
-              )
-            },
-          },
+      {
+        key: 'DISTRIBUTION_Y_MODE',
+        title: 'YMode',
+        width: 200,
+        render() {
+          return (
+            <KeyboardFocus.Distribution mode="y" focusKey="YMode">
+              <Space direction="vertical">
+                <KeyboardFocus.Input y={0} focusKey="0">
+                  <Input size="small" />
+                </KeyboardFocus.Input>
+                <KeyboardFocus.Input y={1} focusKey="1">
+                  <Input size="small" />
+                </KeyboardFocus.Input>
+              </Space>
+            </KeyboardFocus.Distribution>
+          )
+        },
+      },
+      {
+        hide: !show,
+        dataIndex: '1',
+        title: '动态列',
+        width: 200,
+        render(val, row, index) {
+          if (row.isNone) {
+            return renderSkeleton()
+          }
+          return (
+            <Form.Item name={[index, 'number']} noStyle>
+              <KeyboardFocus.Input focusKey="动态列">
+                <InputNumber style={{ width: '100%' }} keyboard={false} />
+              </KeyboardFocus.Input>
+            </Form.Item>
+          )
+        },
+      },
       {
         dataIndex: '2',
         title: '下拉框',
         width: 240,
         render(val, row, index) {
           if (row.isNone) {
-            return <span>None</span>
+            return renderSkeleton()
           }
           return (
             <Form.Item name={[index, 'select']} noStyle>
@@ -217,23 +241,17 @@ const Example: React.VFC = () => {
       {
         key: 'placeholder2',
         width: 150,
-        render() {
-          return 'PLACEHOLDER2'
-        },
+        render: renderSkeleton,
       },
       {
         key: 'placeholder3',
         width: 150,
-        render() {
-          return 'PLACEHOLDER3'
-        },
+        render: renderSkeleton,
       },
       {
         key: 'placeholder4',
         width: 150,
-        render() {
-          return 'PLACEHOLDER3'
-        },
+        render: renderSkeleton,
       },
       {
         dataIndex: '4',
@@ -241,7 +259,7 @@ const Example: React.VFC = () => {
         width: 240,
         render(val, row, index) {
           if (row.isNone) {
-            return <span>None</span>
+            return renderSkeleton()
           }
           const disabled = index === 3 || index === 6 || index === 9
 
@@ -268,7 +286,7 @@ const Example: React.VFC = () => {
         width: 200,
         render(val, row, index) {
           if (row.isNone) {
-            return <span>None</span>
+            return renderSkeleton()
           }
           return (
             <Form.Item name={[index, 'cascader']} noStyle>
@@ -285,7 +303,7 @@ const Example: React.VFC = () => {
         width: 270,
         render(val, row, index) {
           if (row.isNone) {
-            return <span>None</span>
+            return renderSkeleton()
           }
           return (
             <KeyboardFocus.Distribution focusKey="单选框">
@@ -345,11 +363,35 @@ const Example: React.VFC = () => {
         },
       },
     ]
-    return filter(result, (item): item is Item => item !== null)
+    return filter(result, (item) => !item.hide) as ColumnType<Data>[]
   }, [show])
 
   const keyboardFocusRef = useRef<KeyboardFocusContextRef | null>(null)
   const [focusIndex, { onBlur, onFocus }] = useFocusYAxis()
+
+  const [manual, setManual] = useState({
+    dir: 'y',
+    axisValue: 0 as number | undefined | null,
+    key: '多输入组件,1' as string | undefined,
+  })
+
+  const handleManualFocus = () => {
+    const { dir, axisValue, key } = manual
+    const instance = keyboardFocusRef.current
+    if (!instance || isNil(axisValue) || !key) return
+    const focusKey = key.split(',')
+    switch (dir) {
+      case 'x': {
+        instance.notifyVectorByKeyOnYAxis(focusKey, axisValue)
+        break
+      }
+      case 'y': {
+        instance.notifyVectorByKeyOnXAxis(focusKey, axisValue)
+        break
+      }
+      // no default
+    }
+  }
 
   return (
     <Form
@@ -359,16 +401,64 @@ const Example: React.VFC = () => {
         console.log(e)
       }}
     >
-      <Button type="primary" htmlType="submit">
-        表单提交
-      </Button>
-      <Button
-        onClick={() => {
-          setShow((v) => !v)
-        }}
-      >
-        渲染“动态列”显示/隐藏
-      </Button>
+      <h2>使用键盘方向键切换组件的焦点</h2>
+      <Space style={{ marginBottom: 10 }}>
+        <Button type="primary" htmlType="submit">
+          表单提交
+        </Button>
+        <Button
+          onClick={() => {
+            setShow((v) => !v)
+          }}
+        >
+          渲染“动态列”显示/隐藏
+        </Button>
+        <div className="field" style={{ marginLeft: 30 }}>
+          <label className="field-label" htmlFor="manual">
+            指定 key focus 组件：
+          </label>
+          <Space.Compact>
+            <Input
+              prefix="第"
+              style={{ width: 80 }}
+              value={manual.axisValue?.toString()}
+              onChange={(e) => {
+                const { value } = e.target
+                const val = trim(value) === '' ? undefined : Number(trim(value))
+                setManual((prev) => ({
+                  ...prev,
+                  axisValue: val,
+                }))
+              }}
+            />
+            <Select
+              value={manual.dir}
+              onChange={(e) => setManual((prev) => ({ ...prev, dir: e }))}
+              options={[
+                // { label: '列', value: 'x' },
+                { label: '行', value: 'y' },
+              ]}
+            />
+            <Input
+              style={{ width: 180 }}
+              id="manual"
+              placeholder="key 值"
+              value={manual.key}
+              onChange={(e) =>
+                setManual((prev) => ({ ...prev, key: e.target.value }))
+              }
+              suffix={
+                <Tooltip title="表头 title 即为 key，多个 key 则使用逗号分隔。若一个 Cell 内有多个组件，则子组件 key 为从 0 开始的数字">
+                  <InfoCircleOutlined />
+                </Tooltip>
+              }
+            />
+            <Button type="primary" onClick={handleManualFocus}>
+              Focus
+            </Button>
+          </Space.Compact>
+        </div>
+      </Space>
       <KeyboardFocus.AntdTable
         leftFixedWidth={100}
         rightFixedWidth={200}
